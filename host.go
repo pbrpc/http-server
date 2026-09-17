@@ -7,6 +7,8 @@ import (
 
 	"github.com/caarlos0/env/v11"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
+	svc "github.com/pbrpc/service"
 )
 
 // Host contains the HTTP service address, route mux, and configured server.
@@ -31,10 +33,12 @@ func (s *Host) Serve(listener net.Listener) error {
 	return s.Server.Serve(listener)
 }
 
-// FromEnv creates a server from HOST_ADDRESS, HOST_IDLE_TIMEOUT,
+// FromEnv creates a server from SERVICE_ADDRESS, HOST_IDLE_TIMEOUT,
 // HTTP2_SEND_PING_TIMEOUT, HTTP2_PING_TIMEOUT, and the TLS environment
 // variables.
 func FromEnv(middleware ...Middleware) (*Host, error) {
+	svcConfig, _ := env.ParseAs[svc.Configuration]()
+
 	configured, err := env.ParseAs[configuration]()
 	if err != nil {
 		return nil, err
@@ -57,7 +61,7 @@ func FromEnv(middleware ...Middleware) (*Host, error) {
 	handler := otelhttp.NewHandler(&dispatcher{mux: mux, middleware: middleware}, "")
 
 	return &Host{
-		Address: configured.Address,
+		Address: svcConfig.Address,
 		Mux:     mux,
 		Server: &http.Server{
 			Handler:     handler,

@@ -16,7 +16,7 @@ import (
 
 func setConfiguration(t *testing.T) {
 	t.Helper()
-	t.Setenv("HOST_ADDRESS", "127.0.0.1:8080")
+	t.Setenv("SERVICE_ADDRESS", "127.0.0.1:8080")
 	t.Setenv("HOST_IDLE_TIMEOUT", "1m")
 	t.Setenv("HTTP2_SEND_PING_TIMEOUT", "4m")
 	t.Setenv("HTTP2_PING_TIMEOUT", "5s")
