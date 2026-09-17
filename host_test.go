@@ -16,8 +16,8 @@ import (
 
 func setConfiguration(t *testing.T) {
 	t.Helper()
-	t.Setenv("HTTP_SERVER_ADDRESS", "127.0.0.1:8080")
-	t.Setenv("HTTP_SERVER_IDLE_TIMEOUT", "1m")
+	t.Setenv("HOST_ADDRESS", "127.0.0.1:8080")
+	t.Setenv("HOST_IDLE_TIMEOUT", "1m")
 	t.Setenv("HTTP2_SEND_PING_TIMEOUT", "4m")
 	t.Setenv("HTTP2_PING_TIMEOUT", "5s")
 	t.Setenv("TLS_CERT", "")
@@ -36,29 +36,29 @@ func TestFromEnv(t *testing.T) {
 		if srv.Address != "127.0.0.1:8080" {
 			t.Errorf("address = %q, want 127.0.0.1:8080", srv.Address)
 		}
-		if srv.Mux == nil || srv.HTTP == nil || srv.HTTP.Handler == nil {
+		if srv.Mux == nil || srv.Server == nil || srv.Server.Handler == nil {
 			t.Fatalf("server = %+v, want the mux and HTTP server", srv)
 		}
-		if srv.HTTP.IdleTimeout != time.Minute {
-			t.Errorf("idle timeout = %v, want 1m", srv.HTTP.IdleTimeout)
+		if srv.Server.IdleTimeout != time.Minute {
+			t.Errorf("idle timeout = %v, want 1m", srv.Server.IdleTimeout)
 		}
-		if srv.HTTP.HTTP2.SendPingTimeout != 4*time.Minute {
-			t.Errorf("send ping timeout = %v, want 4m", srv.HTTP.HTTP2.SendPingTimeout)
+		if srv.Server.HTTP2.SendPingTimeout != 4*time.Minute {
+			t.Errorf("send ping timeout = %v, want 4m", srv.Server.HTTP2.SendPingTimeout)
 		}
-		if srv.HTTP.HTTP2.PingTimeout != 5*time.Second {
-			t.Errorf("ping timeout = %v, want 5s", srv.HTTP.HTTP2.PingTimeout)
+		if srv.Server.HTTP2.PingTimeout != 5*time.Second {
+			t.Errorf("ping timeout = %v, want 5s", srv.Server.HTTP2.PingTimeout)
 		}
-		if !srv.HTTP.Protocols.HTTP1() || !srv.HTTP.Protocols.UnencryptedHTTP2() {
-			t.Errorf("protocols = %v, want HTTP/1.1 and cleartext HTTP/2", srv.HTTP.Protocols)
+		if !srv.Server.Protocols.HTTP1() || !srv.Server.Protocols.UnencryptedHTTP2() {
+			t.Errorf("protocols = %v, want HTTP/1.1 and cleartext HTTP/2", srv.Server.Protocols)
 		}
-		if srv.HTTP.Protocols.HTTP2() {
-			t.Errorf("protocols = %v, want TLS HTTP/2 disabled", srv.HTTP.Protocols)
+		if srv.Server.Protocols.HTTP2() {
+			t.Errorf("protocols = %v, want TLS HTTP/2 disabled", srv.Server.Protocols)
 		}
 	})
 
 	t.Run("returns invalid duration configuration", func(t *testing.T) {
 		setConfiguration(t)
-		t.Setenv("HTTP_SERVER_IDLE_TIMEOUT", "not-a-duration")
+		t.Setenv("HOST_IDLE_TIMEOUT", "not-a-duration")
 
 		if _, err := FromEnv(); err == nil {
 			t.Fatal("error = nil, want the configuration error")
@@ -71,21 +71,21 @@ func TestFromEnv(t *testing.T) {
 		t.Setenv("TLS_CERT", certPEM)
 		t.Setenv("TLS_KEY", keyPEM)
 
-		srv, err := FromEnv()
+		host, err := FromEnv()
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if len(srv.HTTP.TLSConfig.Certificates) != 1 {
-			t.Fatalf("certificates = %d, want the one loaded", len(srv.HTTP.TLSConfig.Certificates))
+		if len(host.Server.TLSConfig.Certificates) != 1 {
+			t.Fatalf("certificates = %d, want the one loaded", len(host.Server.TLSConfig.Certificates))
 		}
-		if srv.HTTP.TLSConfig.MinVersion != tls.VersionTLS12 {
-			t.Errorf("minimum TLS version = %d, want TLS 1.2", srv.HTTP.TLSConfig.MinVersion)
+		if host.Server.TLSConfig.MinVersion != tls.VersionTLS12 {
+			t.Errorf("minimum TLS version = %d, want TLS 1.2", host.Server.TLSConfig.MinVersion)
 		}
-		if !srv.HTTP.Protocols.HTTP1() || !srv.HTTP.Protocols.HTTP2() {
-			t.Errorf("protocols = %v, want HTTP/1.1 and HTTP/2 over TLS", srv.HTTP.Protocols)
+		if !host.Server.Protocols.HTTP1() || !host.Server.Protocols.HTTP2() {
+			t.Errorf("protocols = %v, want HTTP/1.1 and HTTP/2 over TLS", host.Server.Protocols)
 		}
-		if srv.HTTP.Protocols.UnencryptedHTTP2() {
-			t.Errorf("protocols = %v, want cleartext HTTP/2 disabled", srv.HTTP.Protocols)
+		if host.Server.Protocols.UnencryptedHTTP2() {
+			t.Errorf("protocols = %v, want cleartext HTTP/2 disabled", host.Server.Protocols)
 		}
 	})
 
@@ -100,10 +100,10 @@ func TestFromEnv(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if srv.HTTP.TLSConfig.ClientAuth != tls.RequireAndVerifyClientCert {
-			t.Errorf("client authentication = %v, want required and verified", srv.HTTP.TLSConfig.ClientAuth)
+		if srv.Server.TLSConfig.ClientAuth != tls.RequireAndVerifyClientCert {
+			t.Errorf("client authentication = %v, want required and verified", srv.Server.TLSConfig.ClientAuth)
 		}
-		if srv.HTTP.TLSConfig.ClientCAs == nil {
+		if srv.Server.TLSConfig.ClientCAs == nil {
 			t.Error("client CA pool is nil")
 		}
 	})
@@ -164,7 +164,7 @@ func TestMiddleware(t *testing.T) {
 
 	response := httptest.NewRecorder()
 	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", nil)
-	srv.HTTP.Handler.ServeHTTP(response, request)
+	srv.Server.Handler.ServeHTTP(response, request)
 
 	if response.Code != http.StatusNoContent {
 		t.Fatalf("status = %d, want 204", response.Code)
@@ -176,7 +176,7 @@ func TestMiddleware(t *testing.T) {
 	calls = nil
 	response = httptest.NewRecorder()
 	request = httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/missing", nil)
-	srv.HTTP.Handler.ServeHTTP(response, request)
+	srv.Server.Handler.ServeHTTP(response, request)
 
 	if response.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404", response.Code)

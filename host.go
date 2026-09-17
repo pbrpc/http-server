@@ -17,23 +17,23 @@ type Host struct {
 	// Mux carries every HTTP route served by HTTP.
 	Mux *http.ServeMux
 
-	// HTTP serves Mux with the configured protocols, timeouts, and TLS.
-	HTTP *http.Server
+	// Server serves Mux with the configured protocols, timeouts, and TLS.
+	Server *http.Server
 }
 
 // Serve serves HTTP on listener and terminates TLS when the server carries TLS
 // configuration. It blocks until the server stops or the listener fails.
 func (s *Host) Serve(listener net.Listener) error {
-	if s.HTTP.TLSConfig != nil {
-		return s.HTTP.ServeTLS(listener, "", "")
+	if s.Server.TLSConfig != nil {
+		return s.Server.ServeTLS(listener, "", "")
 	}
 
-	return s.HTTP.Serve(listener)
+	return s.Server.Serve(listener)
 }
 
-// FromEnv creates a server from HTTP_SERVER_ADDRESS,
-// HTTP_SERVER_IDLE_TIMEOUT, HTTP2_SEND_PING_TIMEOUT,
-// HTTP2_PING_TIMEOUT, and the TLS environment variables.
+// FromEnv creates a server from HOST_ADDRESS, HOST_IDLE_TIMEOUT,
+// HTTP2_SEND_PING_TIMEOUT, HTTP2_PING_TIMEOUT, and the TLS environment
+// variables.
 func FromEnv(middleware ...Middleware) (*Host, error) {
 	configured, err := env.ParseAs[configuration]()
 	if err != nil {
@@ -59,7 +59,7 @@ func FromEnv(middleware ...Middleware) (*Host, error) {
 	return &Host{
 		Address: configured.Address,
 		Mux:     mux,
-		HTTP: &http.Server{
+		Server: &http.Server{
 			Handler:     handler,
 			IdleTimeout: configured.IdleTimeout,
 			Protocols:   protocols,
