@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.3.1 - 2026-09-17
+#### Bug Fixes
+- use address from service config - (18b77bd) - Nathan Blair
+
+- - -
+
 ## 0.3.0 - 2026-09-17
 #### Features
 - and rename internal server - (926f312) - Nathan Blair
