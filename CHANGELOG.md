@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.2.0 - 2026-09-17
+#### Features
+- stutter less - (9c531d3) - Nathan Blair
+
+- - -
+
 ## 0.1.0 - 2026-09-17
 #### Features
 - initial release - (5d845ad) - Nathan Blair
