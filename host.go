@@ -9,8 +9,8 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-// Server contains the HTTP service address, route mux, and configured server.
-type Server struct {
+// Host contains the HTTP service address, route mux, and configured server.
+type Host struct {
 	// Address is the TCP address the application supplies to its listener.
 	Address string
 
@@ -23,7 +23,7 @@ type Server struct {
 
 // Serve serves HTTP on listener and terminates TLS when the server carries TLS
 // configuration. It blocks until the server stops or the listener fails.
-func (s *Server) Serve(listener net.Listener) error {
+func (s *Host) Serve(listener net.Listener) error {
 	if s.HTTP.TLSConfig != nil {
 		return s.HTTP.ServeTLS(listener, "", "")
 	}
@@ -34,7 +34,7 @@ func (s *Server) Serve(listener net.Listener) error {
 // FromEnv creates a server from HTTP_SERVER_ADDRESS,
 // HTTP_SERVER_IDLE_TIMEOUT, HTTP2_SEND_PING_TIMEOUT,
 // HTTP2_PING_TIMEOUT, and the TLS environment variables.
-func FromEnv(middleware ...Middleware) (*Server, error) {
+func FromEnv(middleware ...Middleware) (*Host, error) {
 	configured, err := env.ParseAs[configuration]()
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func FromEnv(middleware ...Middleware) (*Server, error) {
 	mux := http.NewServeMux()
 	handler := otelhttp.NewHandler(&dispatcher{mux: mux, middleware: middleware}, "")
 
-	return &Server{
+	return &Host{
 		Address: configured.Address,
 		Mux:     mux,
 		HTTP: &http.Server{
